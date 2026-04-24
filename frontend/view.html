@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 股價預測系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f5f7; color: #333; }
+        
+        /* 1. 上方控制列：改為水平彈性盒子 (Flexbox) */
+        .control-panel { background: white; padding: 20px 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; }
+        .control-panel h2 { margin: 0; color: #444; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        
+        /* 2. 表單內部元素：改為橫向排列 */
+        form { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin: 0; }
+        .form-group { display: flex; align-items: center; gap: 10px; }
+        .form-group label { font-size: 0.95rem; color: #555; font-weight: 500; }
+        .form-group input, .form-group select { padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: #5b7cfa; }
+        
+        /* 按鈕美化 */
+        .submit-btn { background-color: #5b7cfa; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: all 0.2s; box-shadow: 0 2px 4px rgba(91, 124, 250, 0.3); }
+        .submit-btn:hover { background-color: #4a66d4; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(91, 124, 250, 0.4); }
+        
+        /* 3. 圖表區塊：放大佔滿剩餘畫面 */
+        .chart-container { background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 25px; position: relative; height: calc(100vh - 160px); min-height: 500px; }
+        .error { color: #dc3545; background: #ffe6e6; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc3545; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <div class="control-panel">
+        <h2>📈 AI 股價預測系統</h2>
+        <form method="POST" action="index.php">
+            <div class="form-group">
+                <label>證券代號:</label>
+                <input type="text" name="ticker" value="<?php echo htmlspecialchars($ticker); ?>" placeholder="如: 2330, AAPL" required style="width: 140px;">
+            </div>
+            <div class="form-group">
+                <label>選擇期間:</label>
+                <select name="period">
+                    <option value="1mo" <?php if($period=='1mo') echo 'selected'; ?>>1 個月</option>
+                    <option value="6mo" <?php if($period=='6mo') echo 'selected'; ?>>6 個月</option>
+                    <option value="1y" <?php if($period=='1y') echo 'selected'; ?>>1 年</option>
+                    <option value="2y" <?php if($period=='2y') echo 'selected'; ?>>2 年</option>
+                </select>
+            </div>
+            <button type="submit" class="submit-btn">確定查詢</button>
+        </form>
+    </div>
+
+    <?php if ($errorMsg): ?>
+        <div class="error"><?php echo $errorMsg; ?></div>
+    <?php endif; ?>
+
+    <div class="chart-container">
+        <canvas id="stockChart"></canvas>
+    </div>
+
+    <?php if ($chartData): ?>
+    <script>
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        const chartData = <?php echo json_encode($chartData); ?>;
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.dates,
+                datasets: [
+                    {
+                        label: chartData.ticker + ' 實際收盤價',
+                        data: chartData.actual_prices,
+                        borderColor: '#4bc0c0', 
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 1,
+                        fill: true,
+                        tension: 0.1
+                    },
+                    {
+                        label: '線性回歸預測趨勢',
+                        data: chartData.trendline,
+                        borderColor: '#ff6b6b', 
+                        borderWidth: 2,
+                        borderDash: [5, 5], 
+                        pointRadius: 0, 
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: '#f0f0f0' } }
+                }
+            }
+        });
+    </script>
+    <?php endif; ?>
+
+</body>
+</html>
